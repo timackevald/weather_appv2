@@ -10,13 +10,6 @@
 #include "../../include/task_scheduler/task_scheduler.h"
 #include "../../include/tcp/tcp_connection.h"
 
-/*
-    Implementera http_server
-    fortsätt sedan med tcp_connection
-    fortsätt sedan med http_connection
-    lär behöva mata tjatte med all kod 
-*/
-
 int8_t http_server_init(http_server_t *self, struct weather_server *upper_weather_server_layer)
 {
     if (!self) return -1;

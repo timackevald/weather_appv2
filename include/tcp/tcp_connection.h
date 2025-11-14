@@ -11,19 +11,13 @@
 
 typedef struct tcp_connection
 {
-    int fd;                 /* client socket file descriptor */
+    int fd;         
 } tcp_connection_t;
 
-/* Create a tcp_connection for an already-accepted fd.
- * Returns a heap-allocated tcp_connection_t (caller must free/destroy) or NULL.
- * You can replace this with a pool allocator for deterministic allocation.
- */
 tcp_connection_t *tcp_connection_create(int fd);
 
-/* Destroy (free) connection wrapper. Also closes the fd if it's open. */
 void tcp_connection_destroy(tcp_connection_t *c);
 
-/* Set underlying fd to non-blocking. Returns 0 on success. */
 int tcp_connection_set_nonblocking(tcp_connection_t *c);
 
 /* Write helper (simple wrapper around write); returns number of bytes written or -1 */
