@@ -9,10 +9,11 @@ Key Features:
 - Fixed connection pool (32 max concurrent clients)
 - Layered architecture: TCP → HTTP → Weather
 
-TCP Layer: Accepts incoming connections
-HTTP Layer: Manages connection pool and HTTP protocol
-Weather Layer: Application-specific weather logic
-Task Scheduler: Coordinates all async work without threads
+**How it works**
+- TCP Layer: Accepts incoming connections
+- HTTP Layer: Manages connection pool and HTTP protocol
+- Weather Layer: Application-specific weather logic
+- Task Scheduler: Coordinates all async work without threads
 
 All components register with the scheduler and get polled cooperatively.
 ```
