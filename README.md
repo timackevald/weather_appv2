@@ -18,36 +18,34 @@ All components register with the scheduler and get polled cooperatively.
 ```
 .
 ├── include
-│   ├── app
-│   │   └── weather_app.h
-│   ├── http
-│   │   ├── http_connection.h
-│   │   └── http_server.h
-│   ├── task_scheduler
-│   │   └── task_scheduler.h
-│   ├── tcp
-│   │   ├── tcp_connection.h
-│   │   └── tcp_server.h
-│   └── weather
-│       ├── weather_connection.h
-│       └── weather_server.h
+│   ├── app
+│   │   └── weather_app.h
+│   ├── http
+│   │   ├── http_connection.h
+│   │   └── http_server.h
+│   ├── task_scheduler
+│   │   └── task_scheduler.h
+│   ├── tcp
+│   │   └── tcp_server.h
+│   └── weather
+│       ├── weather_connection.h
+│       └── weather_server.h
 ├── main.c
 ├── Makefile
 ├── README.md
 └── src
     ├── app
-    │   └── weather_app.c
+    │   └── weather_app.c
     ├── http
-    │   ├── http_connection.c
-    │   └── http_server.c
+    │   ├── http_connection.c
+    │   └── http_server.c
     ├── task_scheduler
-    │   └── task_scheduler.c
+    │   └── task_scheduler.c
     ├── tcp
-    │   ├── tcp_connection.c
-    │   └── tcp_server.c
+    │   └── tcp_server.c
     └── weather
         ├── weather_connection.c
         └── weather_server.c
 
-13 directories, 19 files
+13 directories, 17 files
 ```
