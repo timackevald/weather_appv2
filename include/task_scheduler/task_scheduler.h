@@ -34,7 +34,9 @@ struct task_node
 typedef struct task_scheduler
 {
 	task_node_t *head;
-	uint8_t count;
+	uint8_t     count;
+	int         fds[64]; // Configure me!
+	uint8_t     fd_count;
    
 } task_scheduler_t;
 
@@ -43,5 +45,8 @@ int8_t task_scheduler_deinit();
 int8_t task_scheduler_add(task_node_t *node);
 int8_t task_scheduler_remove(task_node_t *node);
 int8_t task_scheduler_work();
+int8_t task_scheduler_reg_fd(int fd);
+int8_t task_scheduler_dereg_fd(int fd);
+int8_t task_scheduler_run();
 	
 #endif /* __task_scheduler_h__ */

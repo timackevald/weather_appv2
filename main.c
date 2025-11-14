@@ -3,6 +3,7 @@
  **/
  
 #include "include/app/weather_app.h"
+#include "include/task_scheduler/task_scheduler.h"
 #include <stdio.h>
 #include <unistd.h>
 
@@ -20,8 +21,7 @@ int main(void)
 
     while (1)
     {
-        app_work(&app);
-        usleep(10000);
+		task_scheduler_run();
     }
 
     return 0;

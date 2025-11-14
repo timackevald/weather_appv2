@@ -99,6 +99,8 @@ int8_t tcp_server_init(tcp_server_t *self, const char *port)
     self->node.work = tcp_server_work;
     //self->node.active = 1; Le Problem
     task_scheduler_add(&self->node);
+	task_scheduler_reg_fd(listen_fd);
+	
     printf("[TCP] >> Listening on port %s\n", port);
 
     return 0;
@@ -128,10 +130,6 @@ int8_t tcp_server_work(task_node_t *node)
 
         set_nonblocking_fd(client_fd);
         printf("Accepted client connection of fd=%d\n", client_fd);
-
-        // ADD THESE DEBUG LINES:
-        printf("[TCP] >> upper_http_layer = %p\n", (void*)self->upper_http_layer);
-        printf("[TCP] >> callback = %p\n", (void*)self->cb_to_http_layer.tcp_on_newly_accepted_client);		
         
         /**
          * HERE IS THE CALLBACK TO THE HTTP_LAYER!

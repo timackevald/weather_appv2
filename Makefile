@@ -4,7 +4,7 @@
 
 # Compiler and flags
 CC = gcc
-CFLAGS = -Wall -Wextra -Wpedantic -std=c11 -O0
+CFLAGS = -Wall -Wextra -Wpedantic
 LDFLAGS = 
 
 # Include directories
@@ -25,7 +25,7 @@ SRCS = \
 OBJS = $(SRCS:.c=.o)
 
 # Output executable
-TARGET = weather_app
+TARGET = weather_server
 
 # ----------------------------
 # Build rules

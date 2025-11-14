@@ -72,8 +72,9 @@ void http_server_on_new_client_cb(struct http_server *self, int fd)
      * All engines start, connection is active and registered with the scheduler,
      * it will now be called upon to do some work from time to time... 
      **/
-    connection->node.active = 1;
+    connection->node.active = 0;
     task_scheduler_add(&connection->node);
+	task_scheduler_reg_fd(fd);
     self->active_count++; // One more kid in the pool...
     printf("[HTTP SERVER] >> Client connection fd=%d is active and working\n", fd);
 }

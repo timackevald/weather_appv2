@@ -41,7 +41,7 @@ int8_t app_init(wa_t *self)
         return -1;
     }
 
-    // 5. Make TCP → HTTP connection (AFTER tcp_server_init!)
+    // 5. Make TCP → HTTP connection
     self->tcp_layer.upper_http_layer = &self->http_layer;
     self->tcp_layer.cb_to_http_layer.tcp_on_newly_accepted_client =
         self->http_layer.cb_from_tcp_layer.tcp_on_newly_accepted_client;
