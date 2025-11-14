@@ -128,6 +128,10 @@ int8_t tcp_server_work(task_node_t *node)
 
         set_nonblocking_fd(client_fd);
         printf("Accepted client connection of fd=%d\n", client_fd);
+
+        // ADD THESE DEBUG LINES:
+        printf("[TCP] >> upper_http_layer = %p\n", (void*)self->upper_http_layer);
+        printf("[TCP] >> callback = %p\n", (void*)self->cb_to_http_layer.tcp_on_newly_accepted_client);		
         
         /**
          * HERE IS THE CALLBACK TO THE HTTP_LAYER!
@@ -135,8 +139,15 @@ int8_t tcp_server_work(task_node_t *node)
          **/
         if (self->upper_http_layer && self->cb_to_http_layer.tcp_on_newly_accepted_client)
         {
+			printf("[TCP] >> Calling HTTP callback...\n"); // ADD THIS		   
             self->cb_to_http_layer.tcp_on_newly_accepted_client(self->upper_http_layer, client_fd);
+			printf("[TCP] >> HTTP callback returned\n");
         }
+		else
+		{
+			printf("[TCP] >> ERROR: No callback configured!\n");
+			close(client_fd);
+		}
     }
 
     return 0;
