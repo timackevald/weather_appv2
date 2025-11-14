@@ -8,7 +8,6 @@
 #include <unistd.h>
 #include "../../include/http/http_server.h"
 #include "../../include/task_scheduler/task_scheduler.h"
-#include "../../include/tcp/tcp_connection.h"
 
 int8_t http_server_init(http_server_t *self, struct weather_server *upper_weather_server_layer)
 {

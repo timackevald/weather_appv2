@@ -9,7 +9,6 @@
 #include <sys/types.h>
 #include "../../include/task_scheduler/task_scheduler.h"
 #include "../../include/weather/weather_server.h"
-#include "../../include/tcp/tcp_connection.h"
 #include "../../include/http/http_connection.h"
 
 #define POOL_SIZE 32
