@@ -22,6 +22,8 @@ A simple HTTP server built in C for embedded systems.
 
 The scheduler uses `select()` to sleep until something happens, then wakes up and processes it.
 
+![Design](wa.png)
+
 ## Project Structure
 
 ```
