@@ -18,6 +18,11 @@ static task_scheduler_t g_task_scheduler;
 int8_t task_scheduler_init()
 {
 	memset(&g_task_scheduler, 0, sizeof(g_task_scheduler));
+
+	for (int i = 0; i < MAX_FD; i++)
+	{
+		g_task_scheduler.fds[i] = -1; // Set to invalid state
+	}
 	
 	return 0;
 }
@@ -112,23 +117,21 @@ int8_t task_scheduler_reg_fd(int fd)
 
 int8_t task_scheduler_dereg_fd(int fd)
 {
-	if (fd < 0) return -1;
-	
-	for (int i = 0; i < g_task_scheduler.fd_count; i++)
-	{
-		if (g_task_scheduler.fds[i] == fd)
-		{
-			/* Shift remaining fds down */
-			for (int j = i; j < g_task_scheduler.fd_count - 1; j++)
-			{
-				g_task_scheduler.fds[j] = g_task_scheduler.fds[j + 1];
-			}
-			g_task_scheduler.fd_count--;
-			return 0;
-		}
-	}
-	
-	return -1;
+    if (fd < 0) return -1;
+    
+    for (int i = 0; i < g_task_scheduler.fd_count; i++)
+    {
+        if (g_task_scheduler.fds[i] == fd)
+        {
+            // Swap with last valid element
+            g_task_scheduler.fds[i] = g_task_scheduler.fds[g_task_scheduler.fd_count - 1];
+            g_task_scheduler.fds[g_task_scheduler.fd_count - 1] = -1;  // Mark old spot as invalid
+            g_task_scheduler.fd_count--;
+            return 0;
+        }
+    }
+    
+    return -1;
 }
 
 /**

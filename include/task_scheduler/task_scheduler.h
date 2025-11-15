@@ -9,6 +9,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define MAX_FD 64 //Configure me :)
+
 /**
  * container_of macro - gets parent struct from member pointer
  */
@@ -35,7 +37,7 @@ typedef struct task_scheduler
 {
 	task_node_t *head;
 	uint8_t     count;
-	int         fds[64]; // Configure me!
+	int         fds[MAX_FD]; // Configure me!
 	uint8_t     fd_count;
    
 } task_scheduler_t;
