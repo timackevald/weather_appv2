@@ -14,52 +14,34 @@ A simple HTTP server built in C for embedded systems.
 - Clean layered design: TCP → HTTP → Weather
 - Uses almost no CPU when idle (~0.1%)
 
-**How it's organized:**
-- **TCP Layer**: Accepts new connections on port 8080 (configureable)
-- **HTTP Layer**: Manages connections and handles HTTP requests
-- **Weather Layer**: Where the weather logic goes. Under development...
-- **Task Scheduler**: Watches all connections and calls their work functions when data arrives
+### Layered Architecture
+**App Layer**
+-Container that holds and initializes all layers. Coordinates the entire system.
 
-The scheduler uses `select()` to sleep until something happens, then wakes up and processes it.
+**Weather Layer (Work in Progress)**
+- weather_server_t: Manages weather business logic and connection pool
+- weather_connection_t[32]:  Fixed pool for API calls and data processing
+- Handles weather-specific operations (future: external API integration)
+
+**HTTP Layer**
+- http_server_t: Manages HTTP connection pool and protocol handling
+- http_connection_t[32]: Fixed pool for HTTP request/response processing
+- Parses HTTP requests and formats responses
+- Forwards processed requests to Weather layer (future callback)
+
+**TCP Layer**
+- tcp_server_t: Listens for incoming connections on port 8080
+- Non-blocking accept loop
+- Forwards new connections to HTTP layer via callback
+
+**Task Scheduler**
+- Central event loop using select() for I/O monitoring
+- Calls work() on registered tasks:
+  - tcp_server - accepts new connections
+  - weather_connection[0..31] - processes weather logic
+  - http_connection[0..31] - handles HTTP I/O
 
 ![Design](wa.png)
-
-## Project Structure
-
-```
-.
-├── include
-│   ├── app
-│   │   └── weather_app.h
-│   ├── http
-│   │   ├── http_connection.h
-│   │   └── http_server.h
-│   ├── task_scheduler
-│   │   └── task_scheduler.h
-│   ├── tcp
-│   │   └── tcp_server.h
-│   └── weather
-│       ├── weather_connection.h
-│       └── weather_server.h
-├── main.c
-├── Makefile
-├── README.md
-└── src
-    ├── app
-    │   └── weather_app.c
-    ├── http
-    │   ├── http_connection.c
-    │   └── http_server.c
-    ├── task_scheduler
-    │   └── task_scheduler.c
-    ├── tcp
-    │   └── tcp_server.c
-    └── weather
-        ├── weather_connection.c
-        └── weather_server.c
-
-13 directories, 17 files
-```
 
 ## Usage
 
@@ -82,20 +64,3 @@ curl http://localhost:8080
 ```bash
 make clean
 ```
-
-## How It Works
-
-The main loop is simple:
-```c
-while (1) {
-    task_scheduler_run();  // Sleep until something happens
-}
-```
-
-What happens inside:
-1. Scheduler tells `select()` to watch all open connections
-2. `select()` sleeps until data arrives on any connection
-3. Scheduler wakes up and calls the right work function
-4. Work gets done, then back to sleep
-
-This means the server only uses CPU when there's actual work to do.
