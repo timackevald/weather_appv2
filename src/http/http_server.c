@@ -26,6 +26,7 @@ int8_t http_server_init(http_server_t *self, struct weather_server *upper_weathe
         self->child_http_connection[i].state       = HTTP_CONNECTION_IDLE;
         self->child_http_connection[i].parent      = self;
         self->child_http_connection[i].node.work   = http_connection_work;
+		self->child_http_connection[i].cb_from_weather_layer.weather_on_handled_request = http_connection_on_handled_request;
         self->child_http_connection[i].node.active = 0;
 
     }
@@ -67,7 +68,6 @@ void http_server_on_new_client_cb(struct http_server *self, int fd)
 
     connection->fd    = fd;
     connection->state = HTTP_CONNECTION_READING;
-    connection->upper_weather_server_layer = self->upper_weather_server_layer;
     /**
      * All engines start, connection is active and registered with the scheduler,
      * it will now be called upon to do some work from time to time... 
