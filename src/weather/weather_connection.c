@@ -2,6 +2,7 @@
  * Implementation-file: weather_connection.c
  **/
 
+#include "../../include/weather/weather_server.h"
 #include "../../include/weather/weather_connection.h"
 #include "../../include/http/http_connection.h"
 #include "../../include/task_scheduler/task_scheduler.h"
@@ -59,9 +60,9 @@ void weather_connection_on_request_cb(struct weather_connection *self, const str
         strncpy(self->city, "Stockholm", sizeof(self->city) - 1); // Default
     }
     
-    self->node.active = 0;
+    //self->node.active = 0;
     task_scheduler_add(&self->node);
-    //self->parent->active_count++; FIX THIS LATER!
+    self->parent->active_count++;
     
     printf("[WEATHER_CONN_CB] >> Weather child processing for city: %s\n", self->city);
 }
@@ -137,7 +138,11 @@ int8_t weather_connection_work(task_node_t *node)
             memset(self->response, 0, sizeof(self->response));
             
             task_scheduler_remove(&self->node);
-            // self->parent->active_count--; FIX THIS LATER
+
+			if (self->parent)
+			{
+				self->parent->active_count--;				
+			}
             
             return 0;
         }

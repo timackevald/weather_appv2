@@ -44,8 +44,12 @@ struct http_connection
     task_node_t node;
 
 	char raw_http_buffer[1024]; // Raw http request goes here
+	size_t raw_http_buffer_len;
 	http_connection_request_t parsed_request;
-	char http_on_handled_request_response_buffer[2048]; // Response to client
+
+	char http_on_handled_request_response_buffer[2048]; // Response to client   
+	size_t sent_bytes;
+
 	http_connection_cb_t cb_from_weather_layer;	// Callback from weather layer
 };
 

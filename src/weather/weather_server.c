@@ -20,7 +20,7 @@ int8_t weather_server_init(weather_server_t *self)
         self->child_weather_connection[i].state = WEATHER_CONNECTION_IDLE;
         self->child_weather_connection[i].parent = self;
         self->child_weather_connection[i].node.work = weather_connection_work;
-        self->child_weather_connection[i].node.active = 0;
+        //self->child_weather_connection[i].node.active = 0;
         self->child_weather_connection[i].cb_from_http_layer.http_on_new_request = 
             weather_connection_on_request_cb;
     }

@@ -27,7 +27,7 @@ int8_t http_server_init(http_server_t *self, struct weather_server *upper_weathe
         self->child_http_connection[i].parent      = self;
         self->child_http_connection[i].node.work   = http_connection_work;
 		self->child_http_connection[i].cb_from_weather_layer.weather_on_handled_request = http_connection_on_handled_request;
-        self->child_http_connection[i].node.active = 0;
+        //self->child_http_connection[i].node.active = 0;
 
     }
 
@@ -62,19 +62,24 @@ void http_server_on_new_client_cb(struct http_server *self, int fd)
     http_connection_t *connection = http_server_allocate_pool_slot(self);
     if (!connection || self->active_count >= POOL_SIZE)
     {
-        printf("[HTTP SERVER] >> Rejecting client, pool full!\n");
+        printf("[HTTP] Pool full, rejecting fd=%d\n", fd);
         close(fd);
+        return;
     }
 
-    connection->fd    = fd;
+    // Initialize connection
+    connection->fd = fd;
     connection->state = HTTP_CONNECTION_READING;
-    /**
-     * All engines start, connection is active and registered with the scheduler,
-     * it will now be called upon to do some work from time to time... 
-     **/
-    connection->node.active = 0;
+    connection->raw_http_buffer_len = 0;
+    connection->sent_bytes = 0;
+    memset(connection->raw_http_buffer, 0, sizeof(connection->raw_http_buffer));
+    memset(connection->http_on_handled_request_response_buffer, 0,
+           sizeof(connection->http_on_handled_request_response_buffer));
+
     task_scheduler_add(&connection->node);
-	task_scheduler_reg_fd(fd);
-    self->active_count++; // One more kid in the pool...
-    printf("[HTTP SERVER] >> Client connection fd=%d is active and working\n", fd);
+    task_scheduler_reg_fd(fd);
+
+    self->active_count++;
+    printf("[HTTP] Accepted client fd=%d, pool index=%ld\n", fd,
+           connection - &self->child_http_connection[0]);
 }

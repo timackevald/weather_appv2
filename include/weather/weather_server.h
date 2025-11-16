@@ -11,13 +11,13 @@
 
 #define WEATHER_POOL_SIZE 32
 
-typedef struct weather_server
+struct weather_server
 {
     uint8_t pool_size;
     uint8_t active_count;
     
     weather_connection_t child_weather_connection[WEATHER_POOL_SIZE];
-} weather_server_t;
+};
 
 int8_t weather_server_init(weather_server_t *self);
 weather_connection_t *weather_server_allocate_pool_slot(weather_server_t *self);

@@ -108,44 +108,64 @@ int8_t tcp_server_init(tcp_server_t *self, const char *port)
 
 int8_t tcp_server_work(task_node_t *node)
 {
-    //printf("[TCP_SERVER_WORK] >> Called\n"); // Debgg
+    if (!node) return -1;
+
     tcp_server_t *self = container_of(node, tcp_server_t, node);
     if (!self || self->state != TCP_SERVER_LISTENING) return 0;
 
-    struct sockaddr_storage client_addr;
-    socklen_t addrlen = sizeof(client_addr);
+    //fd_set readfds;
+    //FD_ZERO(&readfds);
+    //FD_SET(self->listen_fd, &readfds);
+    //int max_fd = self->listen_fd;
 
-    for (;;)
+    // Use select with 0 timeout to poll
+    //struct timeval timeout = {0, 0};
+	/**
+	 * ALREADY CHECKING select() IN SCHEDULER
+	 * SHOULD JUST BE ABLE TO ACCEPT
+	 **/
+	//int ready = select(max_fd + 1, &readfds, NULL, NULL, &timeout);
+    /*if (ready < 0)
     {
-        int client_fd = accept(self->listen_fd, (struct sockaddr*)&client_addr,&addrlen);
+        if (errno != EINTR)
+            perror("[TCP] select");
+        return 0;
+    }
+
+    if (!FD_ISSET(self->listen_fd, &readfds))
+        return 0; // No pending connections
+	*/
+
+    // Accept all pending connections (non-blocking)
+    while (1)
+    {
+        struct sockaddr_storage client_addr;
+        socklen_t addrlen = sizeof(client_addr);
+        int client_fd = accept(self->listen_fd, (struct sockaddr*)&client_addr, &addrlen);
         if (client_fd < 0)
         {
             if (errno == EAGAIN || errno == EWOULDBLOCK)
-            {
-                break;
-            }
-            perror("[TCP] >> accept");
+                break; // No more clients waiting
+            perror("[TCP] accept");
             break;
         }
 
-        set_nonblocking_fd(client_fd);
-        printf("Accepted client connection of fd=%d\n", client_fd);
-        
-        /**
-         * HERE IS THE CALLBACK TO THE HTTP_LAYER!
-         * SEND THE NEWLY ACCEPTED CLIENT UPWARDS!
-         **/
+        // Make client socket non-blocking
+        if (fcntl(client_fd, F_SETFL, fcntl(client_fd, F_GETFL, 0) | O_NONBLOCK) < 0)
+            perror("[TCP] fcntl");
+
+        printf("[TCP] Accepted client fd=%d\n", client_fd);
+
+        // Hand over to HTTP
         if (self->upper_http_layer && self->cb_to_http_layer.tcp_on_newly_accepted_client)
         {
-			printf("[TCP] >> Calling HTTP callback...\n"); // ADD THIS		   
             self->cb_to_http_layer.tcp_on_newly_accepted_client(self->upper_http_layer, client_fd);
-			printf("[TCP] >> HTTP callback returned\n");
         }
-		else
-		{
-			printf("[TCP] >> ERROR: No callback configured!\n");
-			close(client_fd);
-		}
+        else
+        {
+            printf("[TCP] No HTTP callback, closing fd=%d\n", client_fd);
+            close(client_fd);
+        }
     }
 
     return 0;

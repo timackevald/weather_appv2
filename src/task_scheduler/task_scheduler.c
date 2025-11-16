@@ -85,6 +85,7 @@ int8_t task_scheduler_work()
 	task_node_t *node = g_task_scheduler.head;
 	while (node)
 	{
+		task_node_t *next = node->next;
 		if (node->active && node->work)
 		{
 			int8_t work = node->work(node);
@@ -94,7 +95,7 @@ int8_t task_scheduler_work()
 				task_scheduler_remove(node);
 			}
 		}
-		node = node->next;
+		node = next;
 	}
 
 	return 0;

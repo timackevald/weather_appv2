@@ -84,68 +84,79 @@ static void parse_http_request(const char *raw, http_connection_request_t *req)
 
 int8_t http_connection_work(task_node_t *node)
 {
-    http_connection_t *self = container_of(node, http_connection_t, node);
-    
-    printf("[HTTP CONNECTION WORK] >> Called, state=%d, fd=%d\n", self->state, self->fd);
+    if (!node) return -1;
 
+    http_connection_t *self = container_of(node, http_connection_t, node);
     if (!self || self->fd < 0) return -1;
 
     switch (self->state)
     {
         case HTTP_CONNECTION_READING:
         {
-            char buf[256];
-            ssize_t r = read(self->fd, buf, sizeof(buf));
-            
-            printf("[HTTP CONNECTION] >> read() returned %ld, errno=%d\n", r, errno);
+            ssize_t r = read(self->fd,
+                             self->raw_http_buffer + self->raw_http_buffer_len,
+                             sizeof(self->raw_http_buffer) - self->raw_http_buffer_len - 1);
+			
+			if (strstr(self->raw_http_buffer, "\r\n\r\n"))
+			{
+				self->state = HTTP_CONNECTION_PARSING;
+			}
+			else if (self->raw_http_buffer_len >= sizeof(self->raw_http_buffer) - 1)
+			{
+				// Buffer full but no complete request
+				printf("[HTTP] Request too large, closing fd=%d\n", self->fd);
+				task_scheduler_dereg_fd(self->fd);
+                close(self->fd);
+                self->fd = -1;
+				if (self->parent)
+				{
+					self->parent->active_count--;
+				}
+                task_scheduler_remove(&self->node);
+                self->state = HTTP_CONNECTION_IDLE;		
+			}
 
-            if (r == 0)
+            if (r > 0)
             {
-                printf("[HTTP CONNECTION] >> Client closed fd=%d\n", self->fd);
+                self->raw_http_buffer_len += r;
+                self->raw_http_buffer[self->raw_http_buffer_len] = '\0';
+                self->state = HTTP_CONNECTION_PARSING;
+                printf("[HTTP] Read %ld bytes\n", r);
+            }
+            else if (r == 0)
+            {
+                // Client closed connection
+                printf("[HTTP] Client closed fd=%d\n", self->fd);
                 task_scheduler_dereg_fd(self->fd);
                 close(self->fd);
                 self->fd = -1;
-                self->state = HTTP_CONNECTION_IDLE;
+				if (self->parent)
+				{
+					self->parent->active_count--;
+				}
                 task_scheduler_remove(&self->node);
-                return 0;
-            }
+                self->state = HTTP_CONNECTION_IDLE;
 
-            if (r < 0)
+            }
+            else if (errno != EAGAIN && errno != EWOULDBLOCK)
             {
-                if (errno == EAGAIN || errno == EWOULDBLOCK)
-                {
-                    printf("[HTTP CONNECTION] >> No data yet (EAGAIN), will try again\n");
-                    return 0;
-                }
-                printf("[HTTP CONNECTION] >> Read error: %d\n", errno);
-                return 0;
+                perror("[HTTP] read");
+                task_scheduler_remove(&self->node);
             }
 
-            printf("[HTTP CONNECTION] >> Received %ld bytes on fd=%d\n", r, self->fd);
-
-            /**
-             * IF BIGGER THAN BUFFER, CHOP IT!
-             **/
-            size_t copy_len = r < (ssize_t)sizeof(self->raw_http_buffer) ? (size_t)r : sizeof(self->raw_http_buffer) - 1;
-            memcpy(self->raw_http_buffer, buf, copy_len);
-            self->raw_http_buffer[copy_len] = '\0';
-            self->state = HTTP_CONNECTION_PARSING;
-            
             return 0;
         }
-        
+
         case HTTP_CONNECTION_PARSING:
         {
-            printf("[HTTP CONNECTION] >> HTTP child parsing request...\n");
+            // Use existing parse function (or replace with sturdy library later)
             parse_http_request(self->raw_http_buffer, &self->parsed_request);
             self->state = HTTP_CONNECTION_PROCESSING;
-            
             return 0;
         }
 
         case HTTP_CONNECTION_PROCESSING:
         {
-            printf("[HTTP CONNECTION] >> HTTP child handing over request to weather child...\n");
             if (self->parent && self->parent->upper_weather_server_layer)
             {
                 weather_connection_t *weather_connection =
@@ -154,79 +165,84 @@ int8_t http_connection_work(task_node_t *node)
                 if (weather_connection)
                 {
                     weather_connection->lower_http_connection = self;
-                    printf("[HTTP CONNECTION] >> HTTP child got Weather child\n"
-                           "[HTTP CONNECTION] >> Calling its callback...\n");
                     weather_connection->cb_from_http_layer.http_on_new_request(
                         weather_connection, &self->parsed_request);
-                    printf("[HTTP CONNECTION] >> Returned from callback!\n");
+
                     self->state = HTTP_CONNECTION_WAITING;
+                    return 0;
                 }
                 else
                 {
-                    printf("[HTTP CONNECTION] >> Weather pool full, sending error\n");
-                    snprintf(self->http_on_handled_request_response_buffer, 
+                    // Weather pool full
+                    snprintf(self->http_on_handled_request_response_buffer,
                              sizeof(self->http_on_handled_request_response_buffer),
-                        "HTTP/1.1 503 Service Unavailable\r\n"
-                        "Content-Type: text/plain\r\n"
-                        "Content-Length: 21\r\n"
-                        "\r\n"
-                        "Service Unavailable\n");
+                             "HTTP/1.1 503 Service Unavailable\r\n"
+                             "Content-Type: text/plain\r\n"
+                             "Content-Length: 21\r\n\r\n"
+                             "Service Unavailable\n");
+                    self->sent_bytes = 0;
                     self->state = HTTP_CONNECTION_SENDING;
+                    return 0;
                 }
-                
-                return 0;
             }
-            else
-            {
-                printf("[HTTP CONNECTION] >> No weather layer configured\n");
-                snprintf(self->http_on_handled_request_response_buffer, 
-                         sizeof(self->http_on_handled_request_response_buffer),
-                    "HTTP/1.1 200 OK\r\n"
-                    "Content-Type: text/plain\r\n"
-                    "Content-Length: 12\r\n"
-                    "\r\n"
-                    "Hello World\n");
-                
-                self->state = HTTP_CONNECTION_SENDING;
-                return 0;
-            }
+
+            // No weather layer configured
+            snprintf(self->http_on_handled_request_response_buffer,
+                     sizeof(self->http_on_handled_request_response_buffer),
+                     "HTTP/1.1 200 OK\r\n"
+                     "Content-Type: text/plain\r\n"
+                     "Content-Length: 12\r\n\r\n"
+                     "Hello World\n");
+            self->sent_bytes = 0;
+            self->state = HTTP_CONNECTION_SENDING;
+            return 0;
         }
-        
+
         case HTTP_CONNECTION_WAITING:
         {
-            /**
-             * WE WAIT FOR WEATHER CHILD PROCESS TO FINISH WORK!
-             * Weather child will call our callback which changes state to SENDING
-             **/
+            // Waiting for weather callback to complete
             return 0;
         }
 
         case HTTP_CONNECTION_SENDING:
         {
-            printf("[HTTP CONNECTION] >> Sending response...\n");
-            
-            ssize_t written = write(self->fd, self->http_on_handled_request_response_buffer,
-                                    strlen(self->http_on_handled_request_response_buffer));
-            printf("[HTTP CONNECTION] >> Wrote %ld bytes\n", written);
-            
-            task_scheduler_dereg_fd(self->fd);
-            close(self->fd);
-            self->fd = -1;
+            size_t total_len = strlen(self->http_on_handled_request_response_buffer);
+            ssize_t written = write(self->fd,
+                                    self->http_on_handled_request_response_buffer + self->sent_bytes,
+                                    total_len - self->sent_bytes);
 
-            printf("[HTTP CONNECTION] >> Response sent, closing fd.\n");
+            if (written > 0)
+            {
+                self->sent_bytes += written;
 
-            self->state = HTTP_CONNECTION_IDLE;
-            task_scheduler_remove(&self->node);
+                if (self->sent_bytes >= total_len)
+                {
+                    // Finished sending
+                    task_scheduler_dereg_fd(self->fd);
+                    close(self->fd);
+                    self->fd = -1;
+					if (self->parent)
+					{
+						self->parent->active_count--;
+					}
+                    task_scheduler_remove(&self->node);
+                    self->state = HTTP_CONNECTION_IDLE;
+                    self->raw_http_buffer_len = 0;
+                    self->sent_bytes = 0;
+                }
+            }
+            else if (errno != EAGAIN && errno != EWOULDBLOCK)
+            {
+                perror("[HTTP] write");
+                task_scheduler_remove(&self->node);
+            }
 
             return 0;
         }
 
         default:
-        {
             return 0;
-        }
     }
 
     return 0;
 }
-
