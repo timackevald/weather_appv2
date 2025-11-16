@@ -12,12 +12,13 @@
 
 typedef struct wa
 {
-    tcp_server_t   tcp_layer;
-    http_server_t  http_layer;
+    tcp_server_t tcp_layer;
+    http_server_t http_layer;
     weather_server_t weather_layer;
 } wa_t;
 
-int8_t app_init(wa_t *self);
+int8_t app_init(wa_t *self, int8_t loglvl);
 int8_t app_work(wa_t *self);
+int8_t app_deinit(wa_t *self);
 
 #endif /* __weather_app_h__ */
