@@ -29,8 +29,8 @@
 #define LISTEN_BACKLOG 32
 #define DEFAULT_PORT "8080"
 
-/* Scheduler settings */
-#define SCHEDULER_SELECT_TIMEOUT_MS 100
+/* Event watcher settings */
+#define EVENT_WATCHER_TIMEOUT_MS 10000
 
 /* HTTP validation */
 #define HTTP_MAX_HEADER_SIZE (HTTP_RAW_BUFFER_SIZE - 1)

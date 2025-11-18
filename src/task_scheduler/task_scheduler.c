@@ -13,14 +13,9 @@ static task_scheduler_t g_task_scheduler;
 
 int8_t task_scheduler_init(void)
 {
-    memset(&g_task_scheduler, 0, sizeof(g_task_scheduler));
-
-    for (int i = 0; i < MAX_FD; i++)
-    {
-        g_task_scheduler.fds[i] = -1;
-    }
-    
+    memset(&g_task_scheduler, 0, sizeof(g_task_scheduler));    
     LOG_INFO("[SCHEDULER] Initialized");
+	
     return 0;
 }
 
@@ -28,7 +23,6 @@ int8_t task_scheduler_deinit(void)
 {
     g_task_scheduler.head = NULL;
     g_task_scheduler.count = 0;
-    g_task_scheduler.fd_count = 0;
     
     LOG_INFO("[SCHEDULER] Deinitialized");
     return 0;
@@ -127,109 +121,4 @@ int8_t task_scheduler_work(void)
     }
 
     return 0;
-}
-
-int8_t task_scheduler_reg_fd(int fd)
-{
-    if (fd < 0) 
-    {
-        LOG_ERROR("[SCHEDULER] Cannot register invalid fd=%d", fd);
-        return -1;
-    }
-    
-    if (g_task_scheduler.fd_count >= MAX_FD) 
-    {
-        LOG_ERROR("[SCHEDULER] FD limit reached, cannot register fd=%d", fd);
-        return -1;
-    }
-    
-    /* Check if already registered */
-    for (int i = 0; i < g_task_scheduler.fd_count; i++)
-    {
-        if (g_task_scheduler.fds[i] == fd)
-        {
-            LOG_DEBUG("[SCHEDULER] fd=%d already registered", fd);
-            return 0;
-        }
-    }
-    
-    g_task_scheduler.fds[g_task_scheduler.fd_count++] = fd;
-    LOG_DEBUG("[SCHEDULER] Registered fd=%d, count=%d", fd, g_task_scheduler.fd_count);
-    return 0;
-}
-
-int8_t task_scheduler_dereg_fd(int fd)
-{
-    if (fd < 0)
-    {
-        LOG_ERROR("[SCHEDULER] Cannot deregister invalid fd=%d", fd);
-        return -1;
-    }
-    
-    for (int i = 0; i < g_task_scheduler.fd_count; i++)
-    {
-        if (g_task_scheduler.fds[i] == fd)
-        {
-            /* Swap with last element */
-            g_task_scheduler.fds[i] = g_task_scheduler.fds[g_task_scheduler.fd_count - 1];
-            g_task_scheduler.fds[g_task_scheduler.fd_count - 1] = -1;
-            g_task_scheduler.fd_count--;
-            
-            LOG_DEBUG("[SCHEDULER] Deregistered fd=%d, count=%d", fd, g_task_scheduler.fd_count);
-            return 0;
-        }
-    }
-    
-    LOG_WARN("[SCHEDULER] fd=%d not found for deregistration", fd);
-    return -1;
-}
-
-/**
- * FIXED: Configurable timeout via config.h
- * Better error handling for select()
- */
-int8_t task_scheduler_run(void)
-{
-    fd_set readfds;
-    FD_ZERO(&readfds);
-    
-    int max_fd = -1;
-    
-    /* Add all registered file descriptors to the set */
-    for (int i = 0; i < g_task_scheduler.fd_count; i++)
-    {
-        int fd = g_task_scheduler.fds[i];
-        if (fd >= 0)
-        {
-            FD_SET(fd, &readfds);
-            if (fd > max_fd) max_fd = fd;
-        }
-    }
-    
-    /* Set timeout from config */
-    struct timeval timeout;
-    timeout.tv_sec = 0;
-    timeout.tv_usec = SCHEDULER_SELECT_TIMEOUT_MS * 1000;
-    
-    int ready = select(max_fd + 1, &readfds, NULL, NULL, &timeout);
-    
-    if (ready < 0)
-    {
-        if (errno == EINTR)
-        {
-            LOG_DEBUG("[SCHEDULER] select interrupted, continuing");
-            return 0;
-        }
-        
-        LOG_ERROR("[SCHEDULER] select failed: %s", strerror(errno));
-        return -1;
-    }
-    
-    if (ready > 0)
-    {
-        LOG_DEBUG("[SCHEDULER] select returned %d ready fds", ready);
-    }
-    
-    /* Run all tasks */
-    return task_scheduler_work();
 }

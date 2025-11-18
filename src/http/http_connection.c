@@ -11,6 +11,7 @@
 #include "../../include/http/http_connection.h"
 #include "../../include/http/http_server.h"
 #include "../../include/task_scheduler/task_scheduler.h"
+#include "../../include/event_watcher/event_watcher.h"
 #include "../../include/weather/weather_server.h"
 #include "../../include/weather/weather_connection.h"
 #include "../../include/logging/logging.h"
@@ -26,7 +27,7 @@ void http_connection_cleanup(http_connection_t *self)
     
     if (self->fd >= 0)
     {
-        task_scheduler_dereg_fd(self->fd);
+        event_watcher_dereg_fd(self->fd);
         close(self->fd);
         self->fd = -1;
     }
@@ -228,7 +229,7 @@ static int parse_http_request(const char *raw, http_connection_request_t *req)
 /**
  * FIXED: Check for complete HTTP request
  */
-static int is_http_request_complete(const char *buffer)
+static int http_request_is_complete(const char *buffer)
 {
     /* HTTP request is complete when we see \r\n\r\n (end of headers) */
     return strstr(buffer, "\r\n\r\n") != NULL;
@@ -270,7 +271,7 @@ int8_t http_connection_work(task_node_t *node)
                 LOG_DEBUG("[HTTP] Read %ld bytes from fd=%d", r, self->fd);
 
                 /* FIXED: Check if request is complete */
-                if (is_http_request_complete(self->raw_http_buffer))
+                if (http_request_is_complete(self->raw_http_buffer))
                 {
                     self->state = HTTP_CONNECTION_PARSING;
                     LOG_DEBUG("[HTTP] Complete request received");

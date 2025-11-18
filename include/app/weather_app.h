@@ -5,6 +5,7 @@
 #ifndef __weather_app_h__
 #define __weather_app_h__
 
+#include "../../include/event_watcher/event_watcher.h"
 #include "../../include/task_scheduler/task_scheduler.h"
 #include "../../include/tcp/tcp_server.h"
 #include "../../include/http/http_server.h"

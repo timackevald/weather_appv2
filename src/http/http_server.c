@@ -9,6 +9,7 @@
 
 #include "../../include/http/http_server.h"
 #include "../../include/task_scheduler/task_scheduler.h"
+#include "../../include/event_watcher/event_watcher.h"
 #include "../../include/logging/logging.h"
 
 int8_t http_server_init(http_server_t *self, struct weather_server *upper_weather_server_layer)
@@ -88,7 +89,7 @@ void http_server_on_new_client_cb(struct http_server *self, int fd)
     memset(&conn->parsed_request, 0, sizeof(conn->parsed_request));
 
     task_scheduler_add(&conn->node);
-    task_scheduler_reg_fd(fd);
+    event_watcher_reg_fd(fd);
 
     self->active_count++;
     

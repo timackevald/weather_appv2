@@ -18,6 +18,7 @@
 
 #include "../../include/tcp/tcp_server.h"
 #include "../../include/task_scheduler/task_scheduler.h"
+#include "../../include/event_watcher/event_watcher.h"
 #include "../../include/logging/logging.h"
 
 static int set_nonblocking_fd(int fd)
@@ -108,7 +109,7 @@ int8_t tcp_server_init(tcp_server_t *self, const char *port)
     self->node.work = tcp_server_work;
     
     task_scheduler_add(&self->node);
-    task_scheduler_reg_fd(listen_fd);
+    event_watcher_reg_fd(listen_fd);
     
     LOG_INFO("[TCP] Listening on port %s (fd=%d)", port, listen_fd);
     return 0;
@@ -186,7 +187,7 @@ void tcp_server_close(tcp_server_t *self)
     
     if (self->listen_fd >= 0)
     {
-        task_scheduler_dereg_fd(self->listen_fd);
+        event_watcher_dereg_fd(self->listen_fd);
         close(self->listen_fd);
         LOG_INFO("[TCP] Closed listen socket fd=%d", self->listen_fd);
     }

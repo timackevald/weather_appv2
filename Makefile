@@ -15,6 +15,7 @@ SRCS = \
     main.c \
     src/app/weather_app.c \
     src/task_scheduler/task_scheduler.c \
+	src/event_watcher/event_watcher.c \
     src/tcp/tcp_server.c \
     src/http/http_server.c \
     src/http/http_connection.c \
