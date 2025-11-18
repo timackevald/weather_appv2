@@ -130,8 +130,7 @@ int8_t tcp_server_work(task_node_t *node)
         return 0;
     }
 
-    /* Accept all pending connections (non-blocking) */
-    while (1)
+    for (int8_t i = 0; i < ACCEPTS_PER_ITERATION; i++)
     {
         struct sockaddr_storage client_addr;
         socklen_t addrlen = sizeof(client_addr);
@@ -151,7 +150,6 @@ int8_t tcp_server_work(task_node_t *node)
             break;
         }
 
-        /* FIXED: Proper error handling on fcntl failure */
         if (set_nonblocking_fd(client_fd) != 0)
         {
             LOG_ERROR("[TCP] fcntl failed for client fd=%d: %s", 

@@ -6,6 +6,7 @@
 #define __http_connection_h__
 
 #include <stdint.h>
+#include <time.h>
 #include "../../include/task_scheduler/task_scheduler.h"
 #include "../../include/config/config.h"
 
@@ -54,6 +55,9 @@ struct http_connection
     size_t sent_bytes;
 
     http_connection_cb_t cb_from_weather_layer;
+
+	time_t last_activity;
+	int timeout_s;
 };
 
 int8_t http_connection_work(task_node_t *node);

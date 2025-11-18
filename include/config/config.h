@@ -28,6 +28,8 @@
 /* TCP settings */
 #define LISTEN_BACKLOG 32
 #define DEFAULT_PORT "8080"
+#define ACCEPTS_PER_ITERATION 8
+#define TCP_TIMEOUT_S 5
 
 /* Event watcher settings */
 #define EVENT_WATCHER_TIMEOUT_MS 10000

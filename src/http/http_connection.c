@@ -2,6 +2,7 @@
  * Implementation-file: http_connection.c
  **/
 
+#include <time.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
@@ -246,6 +247,16 @@ int8_t http_connection_work(task_node_t *node)
         return -1;
     }
 
+	time_t now       = time(NULL);
+	time_t time_idle = now - self->last_activity;
+
+	if(time_idle > self->timeout_s)
+	{
+		LOG_INFO("[HTTP] >> Connection timeout for fd=%d", self->fd);
+		http_connection_cleanup(self);
+		return 0;
+	}
+
     switch (self->state)
     {
         case HTTP_CONNECTION_READING:
@@ -265,6 +276,7 @@ int8_t http_connection_work(task_node_t *node)
 
             if (r > 0)
             {
+				self->last_activity = time(NULL);
                 self->raw_http_buffer_len += r;
                 self->raw_http_buffer[self->raw_http_buffer_len] = '\0';
                 
@@ -393,6 +405,7 @@ int8_t http_connection_work(task_node_t *node)
 
             if (written > 0)
             {
+				self->last_activity = time(NULL);
                 self->sent_bytes += written;
                 LOG_DEBUG("[HTTP] Sent %ld bytes, total %zu/%zu", 
                          written, self->sent_bytes, self->response_len);

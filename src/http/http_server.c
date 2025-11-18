@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "../../include/http/http_server.h"
@@ -78,11 +79,13 @@ void http_server_on_new_client_cb(struct http_server *self, int fd)
     }
 
     /* Initialize connection */
-    conn->fd = fd;
-    conn->state = HTTP_CONNECTION_READING;
+    conn->fd                  = fd;
+    conn->state               = HTTP_CONNECTION_READING;
     conn->raw_http_buffer_len = 0;
-    conn->response_len = 0;
-    conn->sent_bytes = 0;
+    conn->response_len        = 0;
+    conn->sent_bytes          = 0;
+	conn->last_activity       = time(NULL);
+	conn->timeout_s           = TCP_TIMEOUT_S;
     
     memset(conn->raw_http_buffer, 0, sizeof(conn->raw_http_buffer));
     memset(conn->response_buffer, 0, sizeof(conn->response_buffer));
